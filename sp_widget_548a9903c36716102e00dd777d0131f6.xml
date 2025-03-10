@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget"><sp_widget action="INSERT_OR_UPDATE"><category>custom</category><client_script><![CDATA[api.controller = function ($scope, $location, spUtil, spModal) {
+	/* widget controller */
+	var c = this;
+
+	var queryParams = $location.search();
+	if (queryParams.autoreload && queryParams.autoreload == 'true') {
+		spUtil.recordWatch($scope, 'sp_widget', 'sys_id=7e58d0bfc30b16102e00dd777d013193', function (evt) {
+			top.location.reload();
+		});
+	}
+
+	$scope.loading = [];
+
+	$scope.sortTable = function (n) {
+		var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+		table = document.getElementById("updateTable");
+		switching = true;
+		dir = "asc";
+		while (switching) {
+			switching = false;
+			rows = table.rows;
+			for (i = 1; i < (rows.length - 1); i++) {
+				shouldSwitch = false;
+				x = rows[i].getElementsByTagName("TD")[n];
+				y = rows[i + 1].getElementsByTagName("TD")[n];
+				if (dir == "asc") {
+					if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+						shouldSwitch = true;
+						break;
+					}
+				} else if (dir == "desc") {
+					if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+						shouldSwitch = true;
+						break;
+					}
+				}
+			}
+			if (shouldSwitch) {
+				rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+				switching = true;
+				switchcount++;
+			} else {
+				if (switchcount == 0 && dir == "asc") {
+					dir = "desc";
+					switching = true;
+				}
+			}
+		}
+	}
+
+	$scope.restore = function (sys_id) {
+		$scope.loading.push(sys_id);
+		c.server.get({
+			action: 'restore',
+			update_sys_id: sys_id
+		}).then(function (res) {
+
+			if (res.data.restored_success) {
+				removeItemOnce($scope.loading, sys_id);
+
+			}
+			//$timeout(function () {
+			//    window.location.reload();
+			//}, 2000);
+
+		})
+	}
+	function removeItemOnce(arr, value) {
+		var index = arr.indexOf(value);
+		if (index > -1) {
+			arr.splice(index, 1);
+		}
+		return arr;
+	}
+
+	$scope.showOuliers = function (update_set) {
+		var message = '<table padding="2" border="1" class="sync_issue_table"><tr><th>Name</th><th>Type</th><th>Action</th><th>Updated</th></tr>';
+		for (var i = 0; i < update_set.outliers.length; i++) {
+			message += '<tr><td>' + update_set.outliers[i].name + '</td><td>' + update_set.outliers[i].type + '</td><td>' + update_set.outliers[i].action + '</td><td>' + update_set.outliers[i].sys_updated_on + '</td></tr>';
+		}
+		message += '</table>';
+		spModal.open({
+			title: 'Reconcile Sync Issues',
+			size: 'lg',
+			buttons: [
+				{ label: 'Cancel', cancel: true, value: 'cancel' },
+				{ label: '${Delete Backup Records}', primary: true, value: 'delete' },
+				{ label: '${Sync Update Count}', value: 'sync' }
+			],
+			message: message
+		}).then(function (result) {
+			if (result.value == 'delete') {
+				c.server.get({
+					action: 'delete_outliers',
+					update_set_outliers: update_set.outliers
+				}).then(function (res) {
+					if (res.data.deleted_success) {
+						spUtil.addInfoMessage('Outliers Deleted');
+						spUtil.update($scope);
+					}
+				})
+			} else if (result.value == 'sync') {
+				c.server.get({
+					action: 'sync_update_count',
+					update_set_outliers: update_set.outliers,
+					vgbackup_count: update_set.vgbackup_count
+				}).then(function (res) {
+					if (res.data.sync_success) {
+						spUtil.addInfoMessage('Update Count Synced');
+						spUtil.update($scope);
+					}
+				})
+			}
+		})
+
+	}
+
+	$scope.delete = function(update_set){
+		spModal.confirm('Are you sure you want to delete this backup?').then(function(){
+			c.server.get({
+				action: 'delete',
+				update_set: update_set
+			}).then(function(res){
+				if(res.data.deleted_success){
+					spUtil.addInfoMessage('Backup Deleted');
+					spUtil.update($scope);
+				}
+			});
+		});
+	}
+}
+]]></client_script><controller_as>c</controller_as><css>table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table, th, td {
+  border: 1px solid black;
+  padding: 5px;
+}
+
+th {
+  cursor: pointer;
+}
+
+.error_text {
+  text-align: center;
+  color: tomato;
+  cursor: pointer;
+}
+
+.sync_issue_table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid black;
+  padding: 5px;
+}</css><data_table>sp_instance</data_table><demo_data/><description/><docs/><field_list/><has_preview>true</has_preview><id>githubcommits</id><internal>false</internal><link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link><name>GitHubCommits</name><option_schema/><public>false</public><roles/><script><![CDATA[(function () {
+	
+	var gitUtils = new VGGitUtils();
+	
+	if(input){
+
+	}
+	
+	if(!input){
+		data.commits = gitUtils.GetCommits(gitUtils.instanceName)
+		
+	}
+	console.log(data);
+})();]]></script><servicenow>false</servicenow><sys_class_name>sp_widget</sys_class_name><sys_created_by>eric.lemonnier</sys_created_by><sys_created_on>2025-02-10 14:35:46</sys_created_on><sys_id>548a9903c36716102e00dd777d0131f6</sys_id><sys_mod_count>1</sys_mod_count><sys_name>GitHubCommits</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sp_widget_548a9903c36716102e00dd777d0131f6</sys_update_name><sys_updated_by>eric.lemonnier</sys_updated_by><sys_updated_on>2025-02-10 22:06:04</sys_updated_on><template><![CDATA[<div>
+  <table id="updateTable">
+    <thead>
+      <tr>
+        <th ng-click="sortTable(0)">Name</th>
+        <th ng-click="sortTable(1)">Backup Created</th>
+        <th ng-click="sortTable(2)">Backup Updated</th>
+        <th ng-click="sortTable(3)">Description</th>
+        <th ng-click="sortTable(4)">State</th>
+        <th ng-click="sortTable(5)">Records</th>
+        <th ng-click="sortTable(6)">Version</th>
+        <th ng-click="sortTable(7)">Comment</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="backup in data.backup_list">
+        <td><a href="sys_update_set.do?sys_id={{backup.sys_id}}" target="_blank">{{backup.name}}</a></td>
+        <td>{{backup.backup_created}}</td>
+        <td>{{backup.backup_updated}}</td>
+        <td>{{backup.description}}</td>
+        <td>{{backup.state}}</td>
+        <td>{{backup.record_count}}</td>
+        <td>{{backup.vgbackup_version}}</td>
+        <td>{{backup.vgbackup_comment}}</td>
+        <td>
+          <div ng-if="!loading.includes(backup.sys_id)" class="btn btn-primary" ng-click="restore(backup.sys_id)">Restore</div> 
+          <div ng-if="!loading.includes(backup.sys_id)" class="btn btn-danger" ng-click="delete(backup.sys_id)">Delete</div> 
+        	<span ng-if="loading.includes(backup.sys_id)"><img src="/images/loading_tree_anim.gif"/></span>
+          <div class="error_text" ng-if="backup.outliers.length > 0" ng-click="showOuliers(backup)">
+            <i class="icon-alert-triangle" title="This update set has {{backup.outliers.length}} updates that are out of sync"></i> {{backup.outliers.length}} Sync Issues
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>]]></template></sp_widget></record_update>
